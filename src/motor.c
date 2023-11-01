@@ -1,6 +1,39 @@
 #include "motor.h"
 #include "jogoUI.h"
 
+#define MAX_MSG_LEN 50
+
+void lancarBot() {
+    printf("Lançar bot\n");
+    char string[100][MAX_MSG_LEN];
+    int descriptor[2];
+    
+    if(pipe(descriptor) == -1) {
+        perror("Erro ao criar pipe");
+        return;
+    }
+
+    int id = fork();
+
+    if(id == 0) { // Filho
+        close(STDOUT_FILENO);
+        dup(descriptor[1]);
+        close(descriptor[0]);
+        close(descriptor[1]);
+        
+        execl("./bot", "bot", "1", "10", (char *) NULL); // intervalo=1 e duracao=10
+        perror("Erro ao lançar bot");
+        exit(1);
+    } else { // Pai
+        int i = 0;
+        while(read(descriptor[0], string[i], sizeof(string[i])) != -1) {
+            printf("RECEBI: %s", string[i]);
+            ++i;
+        }
+    }
+}
+
+
 void comandosMotor(){
     char comandos[50];
     char *token;
@@ -47,8 +80,7 @@ void comandosMotor(){
             exit(1);
         }
         else if(strcmp(token,"test_bot")==0){
-            //lancar um bot
-            printf("A lancar bot...\n");
+            lancarBot();
         }
         else{
             printf("Comando invalido\n");
