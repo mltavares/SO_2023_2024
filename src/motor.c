@@ -1,6 +1,7 @@
 #include "motor.h"
 #include "jogoUI.h"
 #include <ncurses.h>
+#include <time.h>
 
 #define MAX_MSG_LEN 50
 #define NLIN 16
@@ -29,10 +30,26 @@ void lancarBot() {
         exit(1);
     } else { // Pai
         int i = 0;
-        while(read(descriptor[0], string[i], sizeof(string[i])) != -1) {
+        time_t start_time = time(NULL);
+        int timeout = 10; // timeout = 10 segundos 
+
+        while(1) {
+            if(difftime(time(NULL), start_time) > timeout) {
+                break;
+            }
+            ssize_t count = read(descriptor[0], string[i], sizeof(string[i]));
+
+            if (count == -1) {
+                perror("Erro na leitura do pipe");
+                break; 
+            } else if (count == 0) {
+                break; 
+            }
+
             printf("RECEBI: %s", string[i]);
             ++i;
         }
+
     }
 }
 
