@@ -1,7 +1,10 @@
 #include "motor.h"
 #include "jogoUI.h"
+#include <ncurses.h>
 
 #define MAX_MSG_LEN 50
+#define NLIN 16
+#define NCOL 40
 
 void lancarBot() {
     printf("Lançar bot\n");
@@ -33,6 +36,23 @@ void lancarBot() {
     }
 }
 
+void exibirMapa() {
+    FILE *mapFile;
+    char linha[NCOL + 1];
+
+    mapFile = fopen("mapa.txt", "r");
+
+    if (mapFile == NULL) {
+        perror("Erro ao abrir o arquivo de mapa");
+        return;
+    }
+
+    while (fgets(linha, sizeof(linha), mapFile) != NULL) {
+        printf("%s", linha);
+    }
+
+    fclose(mapFile);
+}
 
 void comandosMotor(){
     char comandos[50];
@@ -82,10 +102,12 @@ void comandosMotor(){
         else if(strcmp(token,"test_bot")==0){
             lancarBot();
         }
+        else if(strcmp(token,"mapa")==0){
+            exibirMapa();
+        }
         else{
             printf("Comando invalido\n");
         }
-
 
 
     }while(1);
