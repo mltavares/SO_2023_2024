@@ -31,7 +31,7 @@ void comandosJogador(WINDOW *janelaBaixo) {
             if (name_token && msg_token) {
                 wprintw(janelaBaixo, "Enviando mensagem para %s: %s", name_token, msg_token);
             } else {
-                wprintw(janelaBaixo, "Comando 'msg' inválido.");
+                wprintw(janelaBaixo, "Comando 'msg' inválido. Verifique os parametros.");
             }
         } else {
             wprintw(janelaBaixo, "Comando '%s' inválido.", token);
