@@ -43,6 +43,13 @@ void comandosJogador(WINDOW *janelaBaixo) {
     scrollok(janelaBaixo, FALSE); 
 }
 
+void utilizadorAutenticado(WINDOW *janela, const char *nomeJogador) {
+
+    mvwprintw(janela, 0, 1, "Jogador: %s", nomeJogador); // imprime na primeira linha da janela
+    wrefresh(janela); // atualiza a janela para exibir a mensagem
+}
+
+
 void desenhaMapa(WINDOW *janela, int tipo)
 {
 
@@ -101,15 +108,19 @@ void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo)
         else if (tecla == ' ') // trata a tecla espaço
         {  // a tecla espaço ativa a janela inferior e tem o scroll ativo
           //  o wprintw e o wgetstr devem ser utilizados em janelas que tem o scroll ativo.
+            desenhaMapa(janelaTopo, 2);
+            mvwprintw(janelaTopo, 1, 1, "Carreguei na tecla ESPACO");
+            wrefresh(janelaTopo);
             echo();                         // habilita a maneira como o utilizador visualiza o que escreve
                                              // ou seja volta a ligar o echo para se ver o que se está a escrever
             wprintw(janelaBaixo, "\n #> "); // utilizada para imprimir. 
                                             //nota como a janelaBaixo tem o scroll ativo, ele vai imprimindo linha a linha
             //wgetstr(janelaBaixo, comando);  // para receber do teclado uma string na "janelaBaixo" para a variavel comando
             //wprintw(janelaBaixo, "\n [%s] ", comando);
+            comandosJogador(janelaBaixo); // função que trata os comandos do jogador
             noecho(); //voltar a desabilitar o que o utilizador escreve
             wrefresh(janelaBaixo); //sempre que se escreve numa janela, tem de se fazer refresh
-            comandosJogador(janelaBaixo); // função que trata os comandos do jogador
+           
         }
         wmove(janelaTopo, 1, 1); // posiciona o cursor (visualmente) na posicao 1,1 da janelaTopo
         tecla = wgetch(janelaTopo); //espera que o utilizador introduza um inteiro. Importante e como já referido anteriormente introduzir a janela onde queremos receber o input
@@ -137,6 +148,7 @@ int main(int argc, char *argv[]){
         WINDOW *janelaBaixo = newwin(15, 82, 26, 1);  
         desenhaMapa(janelaTopo, 2);  // função exemplo que desenha o janela no ecrã
         desenhaMapa(janelaBaixo, 1);  // função exemplo que desenha o janela no ecrã
+        utilizadorAutenticado(janelaBaixo, argv[1]); 
         trataTeclado(janelaTopo, janelaBaixo); // função exemplo que trata o teclado
         wclear(janelaTopo); // função que limpa o ecrã
         wrefresh(janelaTopo);  // função que faz atualização o ecrã com as operações realizadas anteriormente
