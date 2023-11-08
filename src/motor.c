@@ -2,10 +2,29 @@
 #include "jogoUI.h"
 #include <ncurses.h>
 #include <time.h>
+#include <stdlib.h>
 
 #define MAX_MSG_LEN 50
 #define NLIN 16
 #define NCOL 40
+
+// Variáveis de ambiente
+int inscricao;
+int nplayers;
+int duracao;
+int decremento;
+
+void VariaveisAmbiente() {
+    char *env_INSCRICAO = getenv("INSCRICAO");
+    char *env_NPLAYERS = getenv("NPLAYERS");
+    char *env_DURACAO = getenv("DURACAO");
+    char *env_DECREMENTO = getenv("DECREMENTO");
+
+    inscricao = (env_INSCRICAO != NULL) ? atoi(env_INSCRICAO) : 60;
+    nplayers = (env_NPLAYERS != NULL) ? atoi(env_NPLAYERS) : 4;
+    duracao = (env_DURACAO != NULL) ? atoi(env_DURACAO) : 300;
+    decremento = (env_DECREMENTO != NULL) ? atoi(env_DECREMENTO) : 30;
+}
 
 void lancarBot() {
     printf("Lançar bot\n");
@@ -132,6 +151,7 @@ void comandosMotor(){
 }
 
 int main(int argc, char *argv[]){
+    VariaveisAmbiente();
     comandosMotor();
     return 0;
 }
