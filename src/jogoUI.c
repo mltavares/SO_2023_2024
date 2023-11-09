@@ -4,13 +4,13 @@ void comandosJogador(WINDOW *janelaBaixo) {
     char comandos[50];
     char *token;
 
-    wclear(janelaBaixo);
-    wmove(janelaBaixo, 1, 1); 
-    scrollok(janelaBaixo, TRUE); 
+    //wclear(janelaBaixo);
+    //wmove(janelaBaixo, 1, 1); 
+    //scrollok(janelaBaixo, TRUE); 
 
-    echo();
+    //echo();
 
-    wprintw(janelaBaixo, "Comando: ");
+    wprintw(janelaBaixo, "\nComando: ");
     wrefresh(janelaBaixo);
 
     // Lê a entrada do usuário na janelaBaixo
@@ -40,12 +40,12 @@ void comandosJogador(WINDOW *janelaBaixo) {
         wprintw(janelaBaixo, "Nenhum comando foi inserido.");
     }
     wrefresh(janelaBaixo);
-    scrollok(janelaBaixo, FALSE); 
+
 }
 
 void utilizadorAutenticado(WINDOW *janela, const char *nomeJogador) {
 
-    mvwprintw(janela, 0, 1, "Jogador: %s", nomeJogador); // imprime na primeira linha da janela
+    mvwprintw(janela, 0, 1, "JOGADOR: %s\n", nomeJogador); // imprime na primeira linha da janela
     wrefresh(janela); // atualiza a janela para exibir a mensagem
 }
 
@@ -57,7 +57,7 @@ void desenhaMapa(WINDOW *janela, int tipo)
     if (tipo == 1)
     {
         scrollok(janela, TRUE); // liga o scroll na "janela".
-        wprintw(janela, "\n #> ");
+        //wprintw(janela, "\n #> ");
     }
     else 
     {
@@ -113,7 +113,7 @@ void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo)
             wrefresh(janelaTopo);
             echo();                         // habilita a maneira como o utilizador visualiza o que escreve
                                              // ou seja volta a ligar o echo para se ver o que se está a escrever
-            wprintw(janelaBaixo, "\n #> "); // utilizada para imprimir. 
+            //wprintw(janelaBaixo, "\n #> "); // utilizada para imprimir. 
                                             //nota como a janelaBaixo tem o scroll ativo, ele vai imprimindo linha a linha
             //wgetstr(janelaBaixo, comando);  // para receber do teclado uma string na "janelaBaixo" para a variavel comando
             //wprintw(janelaBaixo, "\n [%s] ", comando);
