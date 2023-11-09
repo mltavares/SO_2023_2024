@@ -109,7 +109,7 @@ void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo)
         {  // a tecla espaço ativa a janela inferior e tem o scroll ativo
           //  o wprintw e o wgetstr devem ser utilizados em janelas que tem o scroll ativo.
             desenhaMapa(janelaTopo, 2);
-            mvwprintw(janelaTopo, 1, 1, "Carreguei na tecla ESPACO!");
+            mvwprintw(janelaTopo, 1, 1, "Carreguei na tecla ESPACO");
             wrefresh(janelaTopo);
             echo();                         // habilita a maneira como o utilizador visualiza o que escreve
                                              // ou seja volta a ligar o echo para se ver o que se está a escrever
