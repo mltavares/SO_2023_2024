@@ -1,33 +1,25 @@
 #include "motor.h"
-#include "jogoUI.h"
-#include <ncurses.h>
-#include <time.h>
-#include <stdlib.h>
 
-#define MAX_MSG_LEN 50
+#define MAX_MSG_LEN 1024
 #define NLIN 16
 #define NCOL 40
 
-// Variáveis de ambiente
-int inscricao;
-int nplayers;
-int duracao;
-int decremento;
 
 void VariaveisAmbiente() {
+
     char *env_INSCRICAO = getenv("INSCRICAO");
     char *env_NPLAYERS = getenv("NPLAYERS");
     char *env_DURACAO = getenv("DURACAO");
     char *env_DECREMENTO = getenv("DECREMENTO");
 
-    inscricao = (env_INSCRICAO != NULL) ? atoi(env_INSCRICAO) : 60;
-    nplayers = (env_NPLAYERS != NULL) ? atoi(env_NPLAYERS) : 4;
-    duracao = (env_DURACAO != NULL) ? atoi(env_DURACAO) : 300;
-    decremento = (env_DECREMENTO != NULL) ? atoi(env_DECREMENTO) : 30;
+    printf("INSCRICAO: %s\n", env_INSCRICAO);
+    printf("NPLAYERS: %s\n", env_NPLAYERS);
+    printf("DURACAO: %s\n", env_DURACAO);
+    printf("DECREMENTO: %s\n", env_DECREMENTO);
 }
 
 void lancarBot() {
-    printf("Lançar bot\n");
+    printf("Lançar bot\n"); 
     char string[100][MAX_MSG_LEN];
     int descriptor[2];
     
