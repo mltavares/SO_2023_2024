@@ -4,6 +4,7 @@
 #define NLIN 16
 #define NCOL 40
 
+static volatile sig_atomic_t child_exit_status;
 
 void VariaveisAmbiente() {
 
@@ -18,36 +19,36 @@ void VariaveisAmbiente() {
     printf("DECREMENTO: %s\n", env_DECREMENTO);
 }
 
+void handle_sigint(int signum) {
+    child_exit_status = 1;
+}
+
 void lancarBot() {
     printf("Lançar bot\n"); 
     char string[100][MAX_MSG_LEN];
     int descriptor[2];
     
-    if(pipe(descriptor) == -1) {
+    if (pipe(descriptor) == -1) {
         perror("Erro ao criar pipe");
         return;
     }
 
     int id = fork();
 
-    if(id == 0) { // Filho
+    if (id == 0) { // Filho
         close(STDOUT_FILENO);
         dup(descriptor[1]);
         close(descriptor[0]);
         close(descriptor[1]);
-        
-        execl("./bot", "bot", "1", "10", (char *) NULL); // intervalo=1 e duracao=10
+
+        execl("./bot", "bot", "1", "10", (char *) NULL); 
         perror("Erro ao lançar bot");
         exit(1);
     } else { // Pai
         int i = 0;
-        time_t start_time = time(NULL);
-        int timeout = 10; // timeout = 10 segundos 
+        signal(SIGINT, handle_sigint); 
 
-        while(1) {
-            if(difftime(time(NULL), start_time) > timeout) {
-                break;
-            }
+        while (!child_exit_status) {
             ssize_t count = read(descriptor[0], string[i], sizeof(string[i]));
 
             if (count == -1) {
@@ -61,8 +62,11 @@ void lancarBot() {
             ++i;
         }
 
+        int status;
+        wait(&status);
     }
 }
+
 
 void exibirMapa() {
     FILE *mapFile;
