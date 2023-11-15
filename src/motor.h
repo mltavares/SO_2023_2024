@@ -10,8 +10,13 @@
 #include <time.h>
 #include <sys/types.h>
 #include <signal.h>
+#include "jogoUI.h"
 
 
-
+typedef struct {
+    Jogador jogadores[5];
+    int nivel;
+    int maze[16][40];
+} Jogo;
 
 #endif

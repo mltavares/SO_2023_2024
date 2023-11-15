@@ -148,7 +148,9 @@ void comandosMotor(){
 
 int main(int argc, char *argv[]){
     VariaveisAmbiente();
-    comandosMotor();
+    while(1){
+         comandosMotor();
+    }   
     return 0;
 }
 
