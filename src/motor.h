@@ -12,6 +12,7 @@
 #include <signal.h>
 #include "jogoUI.h"
 
+static int child_exit_status;
 
 typedef struct {
     Jogador jogadores[5];

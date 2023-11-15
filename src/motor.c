@@ -4,7 +4,6 @@
 #define NLIN 16
 #define NCOL 40
 
-static int child_exit_status;
 
 void VariaveisAmbiente() {
 
@@ -103,6 +102,7 @@ void comandosMotor(){
         }
         token = strtok(comandos, " ");
 
+        if(token!=NULL){
         if(strcmp(token,"users")==0){
             printf("users detetado\n");
         }
@@ -140,6 +140,7 @@ void comandosMotor(){
         else{
             printf("Comando invalido\n");
         }
+    }
 
     }while(1);
 
@@ -147,9 +148,7 @@ void comandosMotor(){
 
 int main(int argc, char *argv[]){
     VariaveisAmbiente();
-    while(1){
-         comandosMotor();
-    }   
+    comandosMotor();
     return 0;
 }
 
