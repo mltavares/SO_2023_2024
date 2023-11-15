@@ -4,7 +4,7 @@
 #define NLIN 16
 #define NCOL 40
 
-static volatile sig_atomic_t child_exit_status;
+static int child_exit_status;
 
 void VariaveisAmbiente() {
 
@@ -46,7 +46,7 @@ void lancarBot() {
         exit(1);
     } else { // Pai
         int i = 0;
-        signal(SIGINT, handle_sigint); 
+        signal(SIGINT, handle_sigint);
 
         while (!child_exit_status) {
             ssize_t count = read(descriptor[0], string[i], sizeof(string[i]));
@@ -140,7 +140,6 @@ void comandosMotor(){
         else{
             printf("Comando invalido\n");
         }
-
 
     }while(1);
 

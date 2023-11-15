@@ -27,7 +27,7 @@ void comandosJogador(WINDOW *janelaBaixo) {
             wprintw(janelaBaixo, "Listando jogadores...");
         } else if (strcmp(token, "msg") == 0) {
             char *name_token = strtok(NULL, " ");
-            char *msg_token = strtok(NULL, "");
+            char *msg_token = strtok(NULL, "\n");
             if (name_token && msg_token) {
                 wprintw(janelaBaixo, "Enviando mensagem para %s: %s", name_token, msg_token);
             } else {
