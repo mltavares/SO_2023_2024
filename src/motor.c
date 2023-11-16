@@ -26,6 +26,7 @@ void lancarBot() {
     printf("Lançar bot\n"); 
     char string[100][MAX_MSG_LEN];
     int descriptor[2];
+    child_exit_status = 0;
     
     if (pipe(descriptor) == -1) {
         perror("Erro ao criar pipe");
@@ -44,8 +45,10 @@ void lancarBot() {
         perror("Erro ao lançar bot");
         exit(1);
     } else { // Pai
-        int i = 0;
+        close(descriptor[1]);
         signal(SIGINT, handle_sigint);
+
+        int i = 0;
 
         while (!child_exit_status) {
             ssize_t count = read(descriptor[0], string[i], sizeof(string[i]));
@@ -60,6 +63,8 @@ void lancarBot() {
             printf("RECEBI: %s", string[i]);
             ++i;
         }
+
+        close(descriptor[0]); 
 
         int status;
         wait(&status);
@@ -148,6 +153,7 @@ void comandosMotor(){
 
 int main(int argc, char *argv[]){
     VariaveisAmbiente();
+    //signal(SIGINT, handle_sigint);
     comandosMotor();
     return 0;
 }
