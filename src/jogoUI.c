@@ -1,5 +1,12 @@
 #include "jogoUI.h"
 
+
+void exibirMensagem(WINDOW *janelaMensagens, const char *mensagem) {
+    wprintw(janelaMensagens, "%s\n", mensagem);
+    wrefresh(janelaMensagens);
+}
+
+
 void comandosJogador(WINDOW *janelaBaixo) {
     char comandos[50];
     char *token;
@@ -130,9 +137,13 @@ int main(int argc, char *argv[]){
         mvprintw(1, 10, "[ Up,Down,Right e Left comandos janela de cima ]");  
         mvprintw(2, 10, "[ space - muda para o foco da janela de baixo / q - sair ]"); 
         WINDOW *janelaTopo = newwin(22, 82, 3, 1);  
-        WINDOW *janelaBaixo = newwin(15, 82, 26, 1);  
+        WINDOW *janelaBaixo = newwin(15, 82, 26, 1);
+        WINDOW *janelaMensagens = newwin(22, 30, 3, 84); 
+        scrollok(janelaMensagens, TRUE);
+        box(janelaMensagens, 0, 0);
         desenhaMapa(janelaTopo, 2); 
-        desenhaMapa(janelaBaixo, 1);  
+        desenhaMapa(janelaBaixo, 1);
+        desenhaMapa(janelaMensagens, 1);  
         utilizadorAutenticado(janelaBaixo, argv[1]); 
         trataTeclado(janelaTopo, janelaBaixo); 
         wclear(janelaTopo); 
@@ -141,6 +152,9 @@ int main(int argc, char *argv[]){
         wclear(janelaBaixo); 
         wrefresh(janelaBaixo); 
         delwin(janelaBaixo);  
+        wclear(janelaMensagens);
+        wrefresh(janelaMensagens);
+        wclear(janelaMensagens);
         endwin();  
         return 0;
     }
