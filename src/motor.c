@@ -1,8 +1,10 @@
 #include "motor.h"
 
+
 #define MAX_MSG_LEN 1024
 #define NLIN 16
 #define NCOL 40
+#define LOCK_FILE "/tmp/motor.lock"
 
 
 void VariaveisAmbiente() {
@@ -134,6 +136,7 @@ void comandosMotor(){
         }
         else if(strcmp(token,"end")==0){
             printf("end detetado\n");
+            remove(LOCK_FILE);
             exit(1);
         }
         else if(strcmp(token,"test_bot")==0){
@@ -152,9 +155,16 @@ void comandosMotor(){
 }
 
 int main(int argc, char *argv[]){
+    int lock_fd = open(LOCK_FILE, O_CREAT | O_EXCL, 0644);
+    if (lock_fd == -1) {
+        perror("Uma instância do motor já está em execução.");
+        return 1;
+    }
     VariaveisAmbiente();
     //signal(SIGINT, handle_sigint);
     comandosMotor();
+    close(lock_fd);
+    remove(LOCK_FILE);
     return 0;
 }
 

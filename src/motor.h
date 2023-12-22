@@ -1,6 +1,7 @@
 #ifndef MOTOR_H
 #define MOTOR_H 
 
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -11,6 +12,7 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "jogoUI.h"
+#include <fcntl.h>  
 
 static int child_exit_status;
 
