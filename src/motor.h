@@ -1,6 +1,5 @@
 #ifndef MOTOR_H
-#define MOTOR_H 
-
+#define MOTOR_H
 
 #include <stdio.h>
 #include <string.h>
@@ -12,14 +11,17 @@
 #include <sys/types.h>
 #include <signal.h>
 #include "jogoUI.h"
-#include <fcntl.h>  
+#include <fcntl.h>
+
+#define LINHAS 16
+#define COLUNAS 40
 
 static int child_exit_status;
 
 typedef struct {
     Jogador jogadores[5];
     int nivel;
-    int maze[16][40];
+    char maze[LINHAS][COLUNAS];  
 } Jogo;
 
 #endif

@@ -14,7 +14,6 @@ void comandosJogador(WINDOW *janelaBaixo) {
     wprintw(janelaBaixo, "\nComando: ");
     wrefresh(janelaBaixo);
 
-    // Lê a entrada do usuário na janelaBaixo
     wgetnstr(janelaBaixo, comandos, sizeof(comandos)-1);
 
     noecho();

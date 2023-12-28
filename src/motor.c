@@ -6,7 +6,6 @@
 #define NCOL 40
 #define LOCK_FILE "/tmp/motor.lock"
 
-
 void VariaveisAmbiente() {
 
     char *env_INSCRICAO = getenv("INSCRICAO");
@@ -74,23 +73,30 @@ void lancarBot() {
 }
 
 
-void exibirMapa() {
-    FILE *mapFile;
-    char linha[NCOL + 1];
-
-    mapFile = fopen("mapa.txt", "r");
-
+void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
+    FILE *mapFile = fopen(nomeArquivo, "r");
     if (mapFile == NULL) {
         perror("Erro ao abrir o arquivo de mapa");
-        return;
+        exit(1);
     }
 
-    while (fgets(linha, sizeof(linha), mapFile) != NULL) {
-        printf("%s", linha);
+    char linha[COLUNAS + 1];
+    for (int i = 0; i < LINHAS; i++) {
+        if (fgets(linha, sizeof(linha), mapFile) == NULL) {
+            if (feof(mapFile)) {
+                break; // Sai do loop se chegar ao fim do arquivo
+            } else {
+                perror("Erro ao ler o arquivo do mapa");
+                fclose(mapFile);
+                exit(1);
+            }
+        }
+        strncpy(jogo->maze[i], linha, COLUNAS);
     }
 
     fclose(mapFile);
 }
+
 
 void comandosMotor(){
     char comandos[50];
@@ -142,9 +148,9 @@ void comandosMotor(){
         else if(strcmp(token,"test_bot")==0){
             lancarBot();
         }
-        else if(strcmp(token,"mapa")==0){
+        /*else if(strcmp(token,"mapa")==0){
             exibirMapa();
-        }
+        }*/
         else{
             printf("Comando invalido\n");
         }
@@ -160,8 +166,9 @@ int main(int argc, char *argv[]){
         perror("Uma instância do motor já está em execução.");
         return 1;
     }
+    Jogo jogo;
+    carregarMapa(&jogo, "mapa.txt");
     VariaveisAmbiente();
-    //signal(SIGINT, handle_sigint);
     comandosMotor();
     close(lock_fd);
     remove(LOCK_FILE);
