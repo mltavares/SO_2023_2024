@@ -3,6 +3,7 @@
 #define MAX_MSG_LEN 1024
 #define NLIN 16
 #define NCOL 40
+#define MAX_CLIENTES 5
 #define LOCK_FILE "/tmp/motor.lock"
 #define PIPE_PATH "/tmp/mapa_pipe"
 
@@ -97,18 +98,33 @@ void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     fclose(mapFile);
 }
 
-void enviarMapa(const Jogo *jogo) {
-    int fd = open(PIPE_PATH, O_WRONLY);
-    if (fd == -1) {
-        perror("Erro ao abrir o pipe");
-        return;
+void criarPipes(int nplayers) {
+    char pipePath[64];
+    for (int i = 0; i < nplayers; i++) {
+        sprintf(pipePath, "%s%d", PIPE_PATH, i);
+        if (mkfifo(pipePath, 0666) == -1) {
+            perror("Erro ao criar pipe");
+            exit(1);
+        }
     }
+}
 
-    for (int i = 0; i < LINHAS; i++) {
-        write(fd, jogo->maze[i], COLUNAS);
+void enviarMapa(const Jogo *jogo, int nplayers) {
+    char pipePath[64];
+    for (int i = 0; i < nplayers; i++) {
+        sprintf(pipePath, "%s%d", PIPE_PATH, i);
+        int fd = open(pipePath, O_WRONLY);
+        if (fd == -1) {
+            perror("Erro ao abrir o pipe");
+            continue;
+        }
+
+        for (int j = 0; j < LINHAS; j++) {
+            write(fd, jogo->maze[j], COLUNAS);
+        }
+
+        close(fd);
     }
-
-    close(fd);
 }
 
 
@@ -175,23 +191,38 @@ void comandosMotor(){
 
 }
 
-int main(int argc, char *argv[]){
+int main(int argc, char *argv[]) {
     int lock_fd = open(LOCK_FILE, O_CREAT | O_EXCL, 0644);
     if (lock_fd == -1) {
         perror("Uma instância do motor já está em execução.");
         return 1;
     }
 
-    mkfifo(PIPE_PATH, 0666);
-
     Jogo jogo;
     carregarMapa(&jogo, "mapa.txt");
-    enviarMapa(&jogo);
+
+    int nplayers = MAX_CLIENTES;
+    char *nplayers_env = getenv("NPLAYERS");
+    if (nplayers_env != NULL) {
+        int envPlayers = atoi(nplayers_env);
+        if (envPlayers > 0 && envPlayers <= MAX_CLIENTES) {
+            nplayers = envPlayers;
+        }
+    }
+
+    criarPipes(nplayers);
+    enviarMapa(&jogo, nplayers);
 
     VariaveisAmbiente();
     comandosMotor();
+
+    for (int i = 0; i < nplayers; i++) {
+        char pipePath[64];
+        sprintf(pipePath, "%s%d", PIPE_PATH, i);
+        unlink(pipePath);
+    }
+
     close(lock_fd);
     remove(LOCK_FILE);
-    remove(PIPE_PATH);
     return 0;
 }

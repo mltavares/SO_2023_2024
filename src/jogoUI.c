@@ -7,8 +7,10 @@
 char mapa[LINHAS][COLUNAS];
 
 
-void lerMapaDoPipe() {
-    int fd = open(PIPE_PATH, O_RDONLY);
+void lerMapaDoPipe(char mapa[LINHAS][COLUNAS], int clientIndex) {
+    char pipePath[64];
+    sprintf(pipePath, "%s%d", PIPE_PATH, clientIndex);
+    int fd = open(pipePath, O_RDONLY);
     if (fd == -1) {
         perror("Erro ao abrir o pipe");
         exit(1);
@@ -156,7 +158,8 @@ int main(int argc, char *argv[]){
         WINDOW *janelaBaixo = newwin(15, 82, 26, 1);
         WINDOW *janelaMensagens = newwin(22, 30, 3, 84); 
 
-        lerMapaDoPipe();
+        int clientIndex = atoi(argv[1]);
+        lerMapaDoPipe(mapa, clientIndex);
         desenhaMapa(janelaTopo, 2);
 
         scrollok(janelaMensagens, TRUE);
