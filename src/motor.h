@@ -12,6 +12,8 @@
 #include <signal.h>
 #include "jogoUI.h"
 #include <fcntl.h>
+#include <sys/stat.h>
+
 
 #define LINHAS 16
 #define COLUNAS 40

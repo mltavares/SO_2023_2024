@@ -1,10 +1,10 @@
 #include "motor.h"
 
-
 #define MAX_MSG_LEN 1024
 #define NLIN 16
 #define NCOL 40
 #define LOCK_FILE "/tmp/motor.lock"
+#define PIPE_PATH "/tmp/mapa_pipe"
 
 void VariaveisAmbiente() {
 
@@ -84,7 +84,7 @@ void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     for (int i = 0; i < LINHAS; i++) {
         if (fgets(linha, sizeof(linha), mapFile) == NULL) {
             if (feof(mapFile)) {
-                break; // Sai do loop se chegar ao fim do arquivo
+                break; 
             } else {
                 perror("Erro ao ler o arquivo do mapa");
                 fclose(mapFile);
@@ -95,6 +95,20 @@ void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     }
 
     fclose(mapFile);
+}
+
+void enviarMapa(const Jogo *jogo) {
+    int fd = open(PIPE_PATH, O_WRONLY);
+    if (fd == -1) {
+        perror("Erro ao abrir o pipe");
+        return;
+    }
+
+    for (int i = 0; i < LINHAS; i++) {
+        write(fd, jogo->maze[i], COLUNAS);
+    }
+
+    close(fd);
 }
 
 
@@ -166,12 +180,18 @@ int main(int argc, char *argv[]){
         perror("Uma instância do motor já está em execução.");
         return 1;
     }
+
+    mkfifo(PIPE_PATH, 0666);
+
     Jogo jogo;
     carregarMapa(&jogo, "mapa.txt");
+    enviarMapa(&jogo);
+
     VariaveisAmbiente();
     comandosMotor();
     close(lock_fd);
     remove(LOCK_FILE);
+    unlink(PIPE_PATH);
     return 0;
 }
 

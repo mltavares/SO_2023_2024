@@ -1,10 +1,32 @@
 #include "jogoUI.h"
 
+#define LINHAS 16
+#define COLUNAS 40
+#define PIPE_PATH "/tmp/mapa_pipe"
+
+char mapa[LINHAS][COLUNAS];
+
+
+void lerMapaDoPipe() {
+    int fd = open(PIPE_PATH, O_RDONLY);
+    if (fd == -1) {
+        perror("Erro ao abrir o pipe");
+        exit(1);
+    }
+
+    for (int i = 0; i < LINHAS; i++) {
+        read(fd, mapa[i], COLUNAS);
+    }
+
+    close(fd);
+}
+
 
 void exibirMensagem(WINDOW *janelaMensagens, const char *mensagem) {
     wprintw(janelaMensagens, "%s\n", mensagem);
     wrefresh(janelaMensagens);
 }
+
 
 
 void comandosJogador(WINDOW *janelaBaixo) {
@@ -50,23 +72,25 @@ void utilizadorAutenticado(WINDOW *janela, const char *nomeJogador) {
 }
 
 
-void desenhaMapa(WINDOW *janela, int tipo)
-{
-
-    
-    if (tipo == 1)
-    {
+void desenhaMapa(WINDOW *janela, int tipo) {
+    if (tipo == 1) {
         scrollok(janela, TRUE); 
-    }
-    else 
-    {
-        keypad(janela, TRUE); 
+    } else {
+        int maxLinhas, maxColunas;
+        getmaxyx(janela, maxLinhas, maxColunas);
+
         wclear(janela);
-        wborder(janela, '|', '|', '-', '-', '+', '+', '+', '+'); 
+        box(janela, 0, 0);
+
+        for (int i = 0; i < LINHAS && i < maxLinhas - 2; i++) {
+            mvwprintw(janela, i + 1, 1, "%.*s", maxColunas - 2, mapa[i]);
+        }
     }
     refresh(); 
     wrefresh(janela); 
 }
+
+
 
 void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo) 
 {
@@ -82,33 +106,28 @@ void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo)
         if (tecla == KEY_UP) 
         {
             desenhaMapa(janelaTopo, 2); 
-            mvwprintw(janelaTopo, 1, 1, "Estou a carregar na tecla UP na posição 1,1 "); 
            
             wrefresh(janelaTopo);
         }
         else if (tecla == KEY_RIGHT)
         {
             desenhaMapa(janelaTopo, 2);
-            mvwprintw(janelaTopo, 1, 1, "Estou a carregar na tecla RIGHT na posição 1,1");
             wrefresh(janelaTopo);
         }
         else if (tecla == KEY_LEFT)
         {
             desenhaMapa(janelaTopo, 2);
-            mvwprintw(janelaTopo, 1, 1, "Estou a carregar na tecla LEFT na posição 1,1");
             wrefresh(janelaTopo);
         }
         else if (tecla == KEY_DOWN)
         {
             desenhaMapa(janelaTopo, 2);
-            mvwprintw(janelaTopo, 1, 1, "Estou a carregar na tecla DOWN na posição 1,1");
             wrefresh(janelaTopo);
         }
         else if (tecla == ' ') 
         {  
           
             desenhaMapa(janelaTopo, 2);
-            mvwprintw(janelaTopo, 1, 1, "Carreguei na tecla ESPACO");
             wrefresh(janelaTopo);
             echo();                         
             comandosJogador(janelaBaixo); 
@@ -132,15 +151,16 @@ int main(int argc, char *argv[]){
         raw();  
         noecho();  
         keypad(stdscr, TRUE);  
-        attrset(A_DIM);                                                             
-        mvprintw(1, 10, "[ Up,Down,Right e Left comandos janela de cima ]");  
-        mvprintw(2, 10, "[ space - muda para o foco da janela de baixo / q - sair ]"); 
-        WINDOW *janelaTopo = newwin(22, 82, 3, 1);  
+        attrset(A_DIM);                                                              
+        WINDOW *janelaTopo = newwin(LINHAS + 2, COLUNAS + 1, 3, 10);
         WINDOW *janelaBaixo = newwin(15, 82, 26, 1);
         WINDOW *janelaMensagens = newwin(22, 30, 3, 84); 
+
+        lerMapaDoPipe();
+        desenhaMapa(janelaTopo, 2);
+
         scrollok(janelaMensagens, TRUE);
         box(janelaMensagens, 0, 0);
-        desenhaMapa(janelaTopo, 2); 
         desenhaMapa(janelaBaixo, 1);
         desenhaMapa(janelaMensagens, 1);  
         utilizadorAutenticado(janelaBaixo, argv[1]); 

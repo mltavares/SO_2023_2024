@@ -8,6 +8,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <ncurses.h>
+#include <fcntl.h>
 
 #define MAX_NOME 50
 
