@@ -157,6 +157,7 @@ void comandosMotor(){
         else if(strcmp(token,"end")==0){
             printf("end detetado\n");
             remove(LOCK_FILE);
+            unlink(PIPE_PATH);
             exit(1);
         }
         else if(strcmp(token,"test_bot")==0){
@@ -191,7 +192,6 @@ int main(int argc, char *argv[]){
     comandosMotor();
     close(lock_fd);
     remove(LOCK_FILE);
-    unlink(PIPE_PATH);
+    remove(PIPE_PATH);
     return 0;
 }
-
