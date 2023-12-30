@@ -3,7 +3,6 @@
 #define MAX_MSG_LEN 1024
 #define NLIN 16
 #define NCOL 40
-#define MAX_CLIENTES 5
 #define LOCK_FILE "/tmp/motor.lock"
 #define PIPE_PATH "/tmp/client_fifo_"
 
@@ -120,7 +119,6 @@ void enviarMapa(const Jogo *jogo) {
     }
 }
 
-
 void comandosMotor() {
     char comandos[50];
     char *token;
@@ -178,7 +176,7 @@ void comandosMotor() {
 }
 
 
-void aguardarConexoes(int periodoInscricao) {
+void aguardarConexoes(int periodoInscricao, int nPlayersMinimo, int nPlayersMaximo) {
     time_t inicio = time(NULL);
     contadorClientes = 0;
 
@@ -186,16 +184,32 @@ void aguardarConexoes(int periodoInscricao) {
         DIR *d = opendir("/tmp");
         if (d) {
             struct dirent *dir;
+            int contadorTemp = 0;
             while ((dir = readdir(d)) != NULL) {
                 if (strncmp(dir->d_name, "client_fifo_", 12) == 0) {
-                    contadorClientes++;
+                    contadorTemp++;
                 }
             }
             closedir(d);
+            
+            if (contadorTemp > contadorClientes) {
+                contadorClientes = contadorTemp;
+            }
+
+            if (contadorClientes >= nPlayersMinimo) {
+                printf("Número mínimo de jogadores atingido. Iniciando o jogo.\n");
+                break; 
+            }
+
+            if (contadorClientes >= nPlayersMaximo) {
+                printf("Número máximo de jogadores atingido. Iniciando o jogo.\n");
+                break; 
+            }
         }
-        sleep(1); // Para reduzir o uso da CPU
+        sleep(1);
     }
 }
+
 
 
 int main(int argc, char *argv[]) {
@@ -210,18 +224,19 @@ int main(int argc, char *argv[]) {
 
     VariaveisAmbiente();
 
+    int nPlayersMinimo = atoi(getenv("NPLAYERS") ? getenv("NPLAYERS") : "5");
     int periodoInscricao = atoi(getenv("INSCRICAO") ? getenv("INSCRICAO") : "60");
 
-    aguardarConexoes(periodoInscricao);
+    aguardarConexoes(periodoInscricao, nPlayersMinimo, MAX_PLAYERS);
 
-    if (contadorClientes >= MAX_CLIENTES) {
+    if (contadorClientes >= nPlayersMinimo && contadorClientes <= MAX_PLAYERS) {
         enviarMapa(&jogo);
         comandosMotor();
     } else {
         printf("Número insuficiente de jogadores para iniciar o jogo.\n");
     }
 
-    // Código de limpeza
+
     close(lock_fd);
     remove(LOCK_FILE);
 
