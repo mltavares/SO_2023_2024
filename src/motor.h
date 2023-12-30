@@ -13,6 +13,8 @@
 #include "jogoUI.h"
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <errno.h>
+#include <dirent.h>
 
 
 #define LINHAS 16

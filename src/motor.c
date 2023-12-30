@@ -5,10 +5,11 @@
 #define NCOL 40
 #define MAX_CLIENTES 5
 #define LOCK_FILE "/tmp/motor.lock"
-#define PIPE_PATH "/tmp/mapa_pipe"
+#define PIPE_PATH "/tmp/client_fifo_"
+
+int contadorClientes = 0;
 
 void VariaveisAmbiente() {
-
     char *env_INSCRICAO = getenv("INSCRICAO");
     char *env_NPLAYERS = getenv("NPLAYERS");
     char *env_DURACAO = getenv("DURACAO");
@@ -73,7 +74,6 @@ void lancarBot() {
     }
 }
 
-
 void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     FILE *mapFile = fopen(nomeArquivo, "r");
     if (mapFile == NULL) {
@@ -98,44 +98,36 @@ void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     fclose(mapFile);
 }
 
-void criarPipes(int nplayers) {
-    char pipePath[64];
-    for (int i = 0; i < nplayers; i++) {
-        sprintf(pipePath, "%s%d", PIPE_PATH, i);
-        if (mkfifo(pipePath, 0666) == -1) {
-            perror("Erro ao criar pipe");
-            exit(1);
+void enviarMapa(const Jogo *jogo) {
+    DIR *d;
+    struct dirent *dir;
+    d = opendir("/tmp");
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strncmp(dir->d_name, "client_fifo_", 12) == 0) {
+                char fullPath[512];
+                snprintf(fullPath, sizeof(fullPath), "/tmp/%s", dir->d_name);
+                int fd = open(fullPath, O_WRONLY);
+                if (fd != -1) {
+                    for (int i = 0; i < LINHAS; i++) {
+                        write(fd, jogo->maze[i], COLUNAS);
+                    }
+                    close(fd);
+                }
+            }
         }
-    }
-}
-
-void enviarMapa(const Jogo *jogo, int nplayers) {
-    char pipePath[64];
-    for (int i = 0; i < nplayers; i++) {
-        sprintf(pipePath, "%s%d", PIPE_PATH, i);
-        int fd = open(pipePath, O_WRONLY);
-        if (fd == -1) {
-            perror("Erro ao abrir o pipe");
-            continue;
-        }
-
-        for (int j = 0; j < LINHAS; j++) {
-            write(fd, jogo->maze[j], COLUNAS);
-        }
-
-        close(fd);
+        closedir(d);
     }
 }
 
 
-void comandosMotor(){
+void comandosMotor() {
     char comandos[50];
     char *token;
 
-    do{
-
+    do {
         printf("\nComando: ");
-        fflush(stdout);  
+        fflush(stdout);
 
         fgets(comandos, 50, stdin);
 
@@ -145,51 +137,66 @@ void comandosMotor(){
         }
         token = strtok(comandos, " ");
 
-        if(token!=NULL){
-        if(strcmp(token,"users")==0){
-            printf("users detetado\n");
-        }
-        else if(strcmp(token,"kick")==0){
-            char *name_token = strtok(NULL, " ");
-            if(name_token == NULL){
-                printf("Utilizador invalido\n");
+        if (token != NULL) {
+            if (strcmp(token, "users") == 0) {
+                printf("users detetado\n");
             }
-            else{
-                printf("O utilizador %s foi kickado\n", name_token);
+            else if (strcmp(token, "kick") == 0) {
+                char *name_token = strtok(NULL, " ");
+                if (name_token == NULL) {
+                    printf("Utilizador inválido\n");
+                }
+                else {
+                    printf("O utilizador %s foi kickado\n", name_token);
+                }
+            }
+            else if (strcmp(token, "bots") == 0) {
+                printf("bots detetado\n");
+            }
+            else if (strcmp(token, "bmov") == 0) {
+                printf("bmov detetado\n");
+            }
+            else if (strcmp(token, "rbm") == 0) {
+                printf("rbm detetado\n");
+            }
+            else if (strcmp(token, "begin") == 0) {
+                printf("begin detetado\n");
+            }
+            else if (strcmp(token, "end") == 0) {
+                printf("end detetado\n");
+                remove(LOCK_FILE);
+                exit(1);
+            }
+            else if (strcmp(token, "test_bot") == 0) {
+                lancarBot();
+            }
+            else {
+                printf("Comando inválido\n");
             }
         }
-        else if(strcmp(token,"bots")==0){
-            printf("bots detetado\n");
-        }
-        else if(strcmp(token,"bmov")==0){
-            printf("bmov detetado\n");
-        }
-        else if(strcmp(token,"rbm")==0){
-            printf("rbm detetado\n");
-        }
-        else if(strcmp(token,"begin")==0){
-            printf("begin detetado\n");
-        }
-        else if(strcmp(token,"end")==0){
-            printf("end detetado\n");
-            remove(LOCK_FILE);
-            unlink(PIPE_PATH);
-            exit(1);
-        }
-        else if(strcmp(token,"test_bot")==0){
-            lancarBot();
-        }
-        /*else if(strcmp(token,"mapa")==0){
-            exibirMapa();
-        }*/
-        else{
-            printf("Comando invalido\n");
-        }
-    }
-
-    }while(1);
-
+    } while (1);
 }
+
+
+void aguardarConexoes(int periodoInscricao) {
+    time_t inicio = time(NULL);
+    contadorClientes = 0;
+
+    while (time(NULL) - inicio < periodoInscricao) {
+        DIR *d = opendir("/tmp");
+        if (d) {
+            struct dirent *dir;
+            while ((dir = readdir(d)) != NULL) {
+                if (strncmp(dir->d_name, "client_fifo_", 12) == 0) {
+                    contadorClientes++;
+                }
+            }
+            closedir(d);
+        }
+        sleep(1); // Para reduzir o uso da CPU
+    }
+}
+
 
 int main(int argc, char *argv[]) {
     int lock_fd = open(LOCK_FILE, O_CREAT | O_EXCL, 0644);
@@ -201,28 +208,28 @@ int main(int argc, char *argv[]) {
     Jogo jogo;
     carregarMapa(&jogo, "mapa.txt");
 
-    int nplayers = MAX_CLIENTES;
-    char *nplayers_env = getenv("NPLAYERS");
-    if (nplayers_env != NULL) {
-        int envPlayers = atoi(nplayers_env);
-        if (envPlayers > 0 && envPlayers <= MAX_CLIENTES) {
-            nplayers = envPlayers;
-        }
+    VariaveisAmbiente();
+
+    int periodoInscricao = atoi(getenv("INSCRICAO") ? getenv("INSCRICAO") : "60");
+
+    aguardarConexoes(periodoInscricao);
+
+    if (contadorClientes >= MAX_CLIENTES) {
+        enviarMapa(&jogo);
+        comandosMotor();
+    } else {
+        printf("Número insuficiente de jogadores para iniciar o jogo.\n");
     }
 
-    criarPipes(nplayers);
-    enviarMapa(&jogo, nplayers);
+    // Código de limpeza
+    close(lock_fd);
+    remove(LOCK_FILE);
 
-    VariaveisAmbiente();
-    comandosMotor();
-
-    for (int i = 0; i < nplayers; i++) {
+    for (int i = 0; i < contadorClientes; i++) {
         char pipePath[64];
         sprintf(pipePath, "%s%d", PIPE_PATH, i);
         unlink(pipePath);
     }
 
-    close(lock_fd);
-    remove(LOCK_FILE);
     return 0;
 }

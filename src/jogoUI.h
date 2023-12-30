@@ -9,6 +9,10 @@
 #include <sys/wait.h>
 #include <ncurses.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <dirent.h>
+
 
 #define MAX_NOME 50
 

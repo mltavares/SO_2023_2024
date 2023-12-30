@@ -2,17 +2,26 @@
 
 #define LINHAS 16
 #define COLUNAS 40
-#define PIPE_PATH "/tmp/mapa_pipe"
+#define PIPE_PATH "/tmp/client_fifo_"
 
 char mapa[LINHAS][COLUNAS];
 
+void criarClienteFIFO() {
+    char fifoName[64];
+    sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
 
-void lerMapaDoPipe(char mapa[LINHAS][COLUNAS], int clientIndex) {
-    char pipePath[64];
-    sprintf(pipePath, "%s%d", PIPE_PATH, clientIndex);
-    int fd = open(pipePath, O_RDONLY);
+    if (mkfifo(fifoName, 0666) == -1) {
+        perror("Erro ao criar FIFO do cliente");
+        exit(1);
+    }
+}
+
+void lerMapaDoPipe(char mapa[LINHAS][COLUNAS]) {
+    char fifoName[64];
+    sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
+    int fd = open(fifoName, O_RDONLY);
     if (fd == -1) {
-        perror("Erro ao abrir o pipe");
+        perror("Erro ao abrir o FIFO do cliente");
         exit(1);
     }
 
@@ -23,13 +32,10 @@ void lerMapaDoPipe(char mapa[LINHAS][COLUNAS], int clientIndex) {
     close(fd);
 }
 
-
 void exibirMensagem(WINDOW *janelaMensagens, const char *mensagem) {
     wprintw(janelaMensagens, "%s\n", mensagem);
     wrefresh(janelaMensagens);
 }
-
-
 
 void comandosJogador(WINDOW *janelaBaixo) {
     char comandos[50];
@@ -38,7 +44,7 @@ void comandosJogador(WINDOW *janelaBaixo) {
     wprintw(janelaBaixo, "\nComando: ");
     wrefresh(janelaBaixo);
 
-    wgetnstr(janelaBaixo, comandos, sizeof(comandos)-1);
+    wgetnstr(janelaBaixo, comandos, sizeof(comandos) - 1);
 
     noecho();
 
@@ -55,7 +61,7 @@ void comandosJogador(WINDOW *janelaBaixo) {
             if (name_token && msg_token) {
                 wprintw(janelaBaixo, "Enviando mensagem para %s: %s", name_token, msg_token);
             } else {
-                wprintw(janelaBaixo, "Comando 'msg' inválido. Verifique os parametros.");
+                wprintw(janelaBaixo, "Comando 'msg' inválido. Verifique os parâmetros.");
             }
         } else {
             wprintw(janelaBaixo, "Comando '%s' inválido.", token);
@@ -64,19 +70,16 @@ void comandosJogador(WINDOW *janelaBaixo) {
         wprintw(janelaBaixo, "Nenhum comando foi inserido.");
     }
     wrefresh(janelaBaixo);
-
 }
 
 void utilizadorAutenticado(WINDOW *janela, const char *nomeJogador) {
-
-    mvwprintw(janela, 0, 1, "JOGADOR: %s\n", nomeJogador); 
-    wrefresh(janela); 
+    mvwprintw(janela, 0, 1, "JOGADOR: %s\n", nomeJogador);
+    wrefresh(janela);
 }
-
 
 void desenhaMapa(WINDOW *janela, int tipo) {
     if (tipo == 1) {
-        scrollok(janela, TRUE); 
+        scrollok(janela, TRUE);
     } else {
         int maxLinhas, maxColunas;
         getmaxyx(janela, maxLinhas, maxColunas);
@@ -88,96 +91,82 @@ void desenhaMapa(WINDOW *janela, int tipo) {
             mvwprintw(janela, i + 1, 1, "%.*s", maxColunas - 2, mapa[i]);
         }
     }
-    refresh(); 
-    wrefresh(janela); 
+    refresh();
+    wrefresh(janela);
 }
 
+void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo) {
+    keypad(janelaTopo, TRUE);
+    wmove(janelaTopo, 1, 1);
 
+    int tecla = wgetch(janelaTopo);
+    char comando[100];
 
-void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo) 
-{
-    keypad(janelaTopo, TRUE);       
-    wmove(janelaTopo, 1, 1);       
-   
-    int tecla = wgetch(janelaTopo); 
-    char comando[100];           
-
-    while (tecla != 113) 
-    {
-
-        if (tecla == KEY_UP) 
-        {
-            desenhaMapa(janelaTopo, 2); 
-           
-            wrefresh(janelaTopo);
-        }
-        else if (tecla == KEY_RIGHT)
-        {
+    while (tecla != 113) {
+        if (tecla == KEY_UP) {
             desenhaMapa(janelaTopo, 2);
             wrefresh(janelaTopo);
-        }
-        else if (tecla == KEY_LEFT)
-        {
+        } else if (tecla == KEY_RIGHT) {
             desenhaMapa(janelaTopo, 2);
             wrefresh(janelaTopo);
-        }
-        else if (tecla == KEY_DOWN)
-        {
+        } else if (tecla == KEY_LEFT) {
             desenhaMapa(janelaTopo, 2);
             wrefresh(janelaTopo);
-        }
-        else if (tecla == ' ') 
-        {  
-          
+        } else if (tecla == KEY_DOWN) {
             desenhaMapa(janelaTopo, 2);
             wrefresh(janelaTopo);
-            echo();                         
-            comandosJogador(janelaBaixo); 
-            noecho(); 
-            wrefresh(janelaBaixo); 
-           
+        } else if (tecla == ' ') {
+            desenhaMapa(janelaTopo, 2);
+            wrefresh(janelaTopo);
+            echo();
+            comandosJogador(janelaBaixo);
+            noecho();
+            wrefresh(janelaBaixo);
         }
-        wmove(janelaTopo, 1, 1); 
-        tecla = wgetch(janelaTopo); 
+        wmove(janelaTopo, 1, 1);
+        tecla = wgetch(janelaTopo);
     }
 }
 
 
-int main(int argc, char *argv[]){
-    if(argc != 2){
-        printf("Login invalido\n");
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("Login inválido\n");
+        return 1;
     }
-    else{
-       
-        initscr(); 
-        raw();  
-        noecho();  
-        keypad(stdscr, TRUE);  
-        attrset(A_DIM);                                                              
-        WINDOW *janelaTopo = newwin(LINHAS + 2, COLUNAS + 1, 3, 10);
-        WINDOW *janelaBaixo = newwin(15, 82, 26, 1);
-        WINDOW *janelaMensagens = newwin(22, 30, 3, 84); 
 
-        int clientIndex = atoi(argv[1]);
-        lerMapaDoPipe(mapa, clientIndex);
-        desenhaMapa(janelaTopo, 2);
+    initscr();
+    raw();
+    noecho();
+    keypad(stdscr, TRUE);
+    attrset(A_DIM);
+    WINDOW *janelaTopo = newwin(LINHAS + 2, COLUNAS + 1, 3, 10);
+    WINDOW *janelaBaixo = newwin(15, 82, 26, 1);
+    WINDOW *janelaMensagens = newwin(22, 30, 3, 84);
 
-        scrollok(janelaMensagens, TRUE);
-        box(janelaMensagens, 0, 0);
-        desenhaMapa(janelaBaixo, 1);
-        desenhaMapa(janelaMensagens, 1);  
-        utilizadorAutenticado(janelaBaixo, argv[1]); 
-        trataTeclado(janelaTopo, janelaBaixo); 
-        wclear(janelaTopo); 
-        wrefresh(janelaTopo);  
-        delwin(janelaTopo);  
-        wclear(janelaBaixo); 
-        wrefresh(janelaBaixo); 
-        delwin(janelaBaixo);  
-        wclear(janelaMensagens);
-        wrefresh(janelaMensagens);
-        wclear(janelaMensagens);
-        endwin();  
-        return 0;
-    }
+    criarClienteFIFO();
+    lerMapaDoPipe(mapa);
+    desenhaMapa(janelaTopo, 2);
+
+    scrollok(janelaMensagens, TRUE);
+    box(janelaMensagens, 0, 0);
+    desenhaMapa(janelaBaixo, 1);
+    desenhaMapa(janelaMensagens, 1);
+    utilizadorAutenticado(janelaBaixo, argv[1]);
+    trataTeclado(janelaTopo, janelaBaixo);
+    wclear(janelaTopo);
+    wrefresh(janelaTopo);
+    delwin(janelaTopo);
+    wclear(janelaBaixo);
+    wrefresh(janelaBaixo);
+    delwin(janelaBaixo);
+    wclear(janelaMensagens);
+    wrefresh(janelaMensagens);
+    wclear(janelaMensagens);
+    endwin();
+    char fifoName[64];
+    sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
+    unlink(fifoName);
+    return 0;
 }
+
