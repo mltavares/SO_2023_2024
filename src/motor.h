@@ -15,7 +15,8 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <dirent.h>
-
+#include <pthread.h>
+    
 #define MAX_PLAYERS 5
 #define MAX_BMOVS 5
 #define MAX_BOTS 10
@@ -37,6 +38,8 @@ typedef struct {
 typedef struct {
     char name[PLAYER_NAME_SIZE];
     char pipe[MAX_PIPE_SIZE];
+    pid_t pid;
+    char icone;
     int xCoordinate;
     int yCoordinate;
     int isPlaying;
@@ -93,5 +96,8 @@ void comandoRBM(KeyboardHandlerToken *token);
 void comandoBegin(KeyboardHandlerToken *token);
 void initBmov(KeyboardHandlerToken *token, Bmov *bmov);
 int generateRandom(int min, int max);
+
+void lerComandosDosJogadores(PlayerArray *players, Jogo *jogo);
+
 
 #endif
