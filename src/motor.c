@@ -119,13 +119,85 @@ void enviarMapa(const Jogo *jogo) {
     }
 }
 
-void comandosMotor() {
+int generateRandom(int min, int max) {
+    return rand() % (max - min + 1) + min;
+}
+
+void comandoUsers(KeyboardHandlerToken *token) {
+    printf("Lista Users:\n");
+    for(int i = 0; i < token->players->nPlayers; ++i) {
+        printf("\t<%s>\n", token->players->array[i].name);
+    }
+}
+
+void comandoBots(KeyboardHandlerToken *token) {
+    BotArray *bots = token->bots;
+
+    for(int i = 0; i < bots->nBots; ++i) {
+        printf("Intervalo Bot: %d | Duracao Bot: %d\n", bots->bots[i].interval, bots->bots[i].duration);
+    }
+}
+
+
+void comandoBMOV(KeyboardHandlerToken *token) {
+    BmovArray *bmovs = token->bmovs;
+    if(bmovs->nbmovs < MAX_BMOVS) {
+        initBmov(token, &bmovs->bmovs[bmovs->nbmovs]);
+        bmovs->nbmovs++;
+        printf("Bmov adicionada com sucesso\n");
+    } else {
+        printf("Numero maximo de Bmovs\n");
+        return;
+    }
+}
+
+
+void initBmov(KeyboardHandlerToken *token, Bmov *bmov) {
+    Map *map = token->map;
+    int x;
+    int y;
+    
+    do {
+        x = generateRandom(0, MAX_WIDTH - 2);
+        y = generateRandom(0, MAX_WIDTH - 2);
+    } while(map->array[x][y] != ' ');
+    
+    bmov->x = x;
+    bmov->y = y;
+}
+
+
+void comandoRBM(KeyboardHandlerToken *token) {
+    BmovArray *bmovs = token->bmovs;
+
+    if(bmovs->nbmovs <= 0) {
+        printf("Nao existe bmov para remover\n");
+        return;
+    }
+
+    for(int i = 0; i < bmovs->nbmovs - 1; ++i) {
+        bmovs->bmovs[i] = bmovs->bmovs[i + 1];
+    }
+
+    bmovs->nbmovs--;
+    printf("Bmov removida\n");
+}
+
+
+void comandoBegin(KeyboardHandlerToken *token) {
+    printf("O jogo vai começar\n");
+    token->keyboardFeed = 0;
+}
+
+void comandosMotor(Jogo *jogo, PlayerArray *players) {
     char comandos[50];
+    char name_token[50];
     char *token;
 
-    do {
+    do{
+
         printf("\nComando: ");
-        fflush(stdout);
+        fflush(stdout);  
 
         fgets(comandos, 50, stdin);
 
@@ -135,11 +207,12 @@ void comandosMotor() {
         }
         token = strtok(comandos, " ");
 
-        if (token != NULL) {
-            if (strcmp(token, "users") == 0) {
-                printf("users detetado\n");
-            }
-            else if (strcmp(token, "kick") == 0) {
+                if(token!=NULL){
+        if(strcmp(token,"users")==0){
+            KeyboardHandlerToken keyboardToken;
+            comandoUsers(&keyboardToken);
+        }
+        else if(strcmp(token,"kick")==0){
                 char *name_token = strtok(NULL, " ");
                 if (name_token == NULL) {
                     printf("Utilizador inválido\n");
@@ -148,31 +221,39 @@ void comandosMotor() {
                     printf("O utilizador %s foi kickado\n", name_token);
                 }
             }
-            else if (strcmp(token, "bots") == 0) {
-                printf("bots detetado\n");
-            }
-            else if (strcmp(token, "bmov") == 0) {
-                printf("bmov detetado\n");
-            }
-            else if (strcmp(token, "rbm") == 0) {
-                printf("rbm detetado\n");
-            }
-            else if (strcmp(token, "begin") == 0) {
-                printf("begin detetado\n");
-            }
-            else if (strcmp(token, "end") == 0) {
-                printf("end detetado\n");
-                remove(LOCK_FILE);
-                exit(1);
-            }
-            else if (strcmp(token, "test_bot") == 0) {
-                lancarBot();
-            }
-            else {
-                printf("Comando inválido\n");
-            }
+        else if(strcmp(token,"bots")==0){
+            KeyboardHandlerToken keyboardToken;
+            comandoBots(&keyboardToken);
         }
-    } while (1);
+        else if(strcmp(token,"bmov")==0){
+            KeyboardHandlerToken keyboardToken;
+            comandoBMOV(&keyboardToken);
+        }
+        else if(strcmp(token,"rbm")==0){
+            KeyboardHandlerToken keyboardToken;
+            comandoRBM(&keyboardToken);
+        }
+        else if(strcmp(token,"begin")==0){
+            KeyboardHandlerToken keyboardToken;
+            comandoBegin(&keyboardToken);
+        }
+        else if(strcmp(token,"end")==0){
+            printf("end detetado\n");
+            remove(LOCK_FILE);
+            exit(1);
+        }
+        else if(strcmp(token,"test_bot")==0){
+            lancarBot();
+        }
+        else{
+            printf("Comando invalido\n");
+        }
+    }
+
+     lerComandosDosJogadores(players, jogo);
+
+    }while(1);
+
 }
 
 
@@ -191,7 +272,7 @@ void aguardarConexoes(int periodoInscricao, int nPlayersMinimo, int nPlayersMaxi
                 }
             }
             closedir(d);
-            
+
             if (contadorTemp > contadorClientes) {
                 contadorClientes = contadorTemp;
             }
@@ -210,6 +291,47 @@ void aguardarConexoes(int periodoInscricao, int nPlayersMinimo, int nPlayersMaxi
     }
 }
 
+void lerComandosDosJogadores(PlayerArray *players, Jogo *jogo) {
+    char comando;
+    ssize_t bytesLidos;
+
+    for (int i = 0; i < players->nPlayers; i++) {
+        int fd = open(players->array[i].pipe, O_RDONLY | O_NONBLOCK);
+
+        if (fd != -1) {
+            while ((bytesLidos = read(fd, &comando, sizeof(comando))) > 0) {
+                // Atualizar a posição do jogador com base no comando
+                int x = players->array[i].xCoordinate;
+                int y = players->array[i].yCoordinate;
+
+                switch (comando) {
+                    case 'w': // Mover para cima
+                        if (y > 0 && (jogo->maze[y - 1][x] != 'P' && jogo->maze[y - 1][x] != 'B')) {
+                            players->array[i].yCoordinate--;
+                        }
+                        break;
+                    case 's': // Mover para baixo
+                        if (y < LINHAS - 1 && (jogo->maze[y + 1][x] != 'P' && jogo->maze[y + 1][x] != 'B')) {
+                            players->array[i].yCoordinate++;
+                        }
+                        break;
+                    case 'a': // Mover para esquerda
+                        if (x > 0 && (jogo->maze[y][x - 1] != 'P' && jogo->maze[y][x - 1] != 'B')) {
+                            players->array[i].xCoordinate--;
+                        }
+                        break;
+                    case 'd': // Mover para direita
+                        if (x < COLUNAS - 1 && (jogo->maze[y][x + 1] != 'P' && jogo->maze[y][x + 1] != 'B')) {
+                            players->array[i].xCoordinate++;
+                        }
+                        break;
+                }
+            }
+
+            close(fd);
+        }
+    }
+}
 
 
 int main(int argc, char *argv[]) {
@@ -220,6 +342,7 @@ int main(int argc, char *argv[]) {
     }
 
     Jogo jogo;
+    PlayerArray players;
     carregarMapa(&jogo, "mapa.txt");
 
     VariaveisAmbiente();
@@ -231,11 +354,10 @@ int main(int argc, char *argv[]) {
 
     if (contadorClientes >= nPlayersMinimo && contadorClientes <= MAX_PLAYERS) {
         enviarMapa(&jogo);
-        comandosMotor();
+        comandosMotor(&jogo, &players);
     } else {
         printf("Número insuficiente de jogadores para iniciar o jogo.\n");
     }
-
 
     close(lock_fd);
     remove(LOCK_FILE);
