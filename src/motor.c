@@ -289,6 +289,7 @@ void aguardarConexoes(int periodoInscricao, int nPlayersMinimo, int nPlayersMaxi
         }
         sleep(1);
     }
+    }
 }
 
 void lerComandosDosJogadores(PlayerArray *players, Jogo *jogo) {
@@ -326,6 +327,7 @@ void lerComandosDosJogadores(PlayerArray *players, Jogo *jogo) {
                         }
                         break;
                 }
+                enviarMapa(jogo);
             }
 
             close(fd);
@@ -355,6 +357,13 @@ int main(int argc, char *argv[]) {
     if (contadorClientes >= nPlayersMinimo && contadorClientes <= MAX_PLAYERS) {
         enviarMapa(&jogo);
         comandosMotor(&jogo, &players);
+
+        while (1)
+        {
+            lerComandosDosJogadores(&players, &jogo);
+        }
+        
+
     } else {
         printf("Número insuficiente de jogadores para iniciar o jogo.\n");
     }

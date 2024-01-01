@@ -1,4 +1,3 @@
-  GNU nano 7.2                                                                                          motor.h                                                                                                    
 #ifndef MOTOR_H
 #define MOTOR_H
 
@@ -16,6 +15,7 @@
 #include <errno.h>
 #include <dirent.h>
 #include <pthread.h>
+#include <stddef.h>
 #include "comuns.h"
 
 static int child_exit_status;
