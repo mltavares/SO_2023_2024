@@ -1,10 +1,14 @@
 #include "jogoUI.h"
+#include "comuns.h"
 
 #define LINHAS 16
 #define COLUNAS 40
 #define PIPE_PATH "/tmp/client_fifo_"
 
 char mapa[LINHAS][COLUNAS];
+
+WINDOW *janelaBaixo;
+WINDOW *janelaTopo;
 
 void criarClienteFIFO() {
     char fifoName[64];
@@ -37,6 +41,12 @@ void exibirMensagem(WINDOW *janelaMensagens, const char *mensagem) {
     wrefresh(janelaMensagens);
 }
 
+void comandoPlayers(KeyboardHandlerToken *token) {
+    for(int i = 0; i < token->players->nPlayers; ++i) {
+        mvwprintw(janelaBaixo, i + 1, 1, "Nome e Icone: %s | %c\0\n", token->players->array[i].name, token->players->array[i].icone);
+    }
+}
+
 void comandosJogador(WINDOW *janelaBaixo) {
     char comandos[50];
     char *token;
@@ -54,7 +64,8 @@ void comandosJogador(WINDOW *janelaBaixo) {
         if (strcmp(token, "exit") == 0) {
             wprintw(janelaBaixo, "Saindo...");
         } else if (strcmp(token, "players") == 0) {
-            wprintw(janelaBaixo, "Listando jogadores...");
+            KeyboardHandlerToken keyboardToken;
+            comandoPlayers(&keyboardToken);
         } else if (strcmp(token, "msg") == 0) {
             char *name_token = strtok(NULL, " ");
             char *msg_token = strtok(NULL, "\n");
@@ -169,4 +180,3 @@ int main(int argc, char *argv[]) {
     unlink(fifoName);
     return 0;
 }
-
