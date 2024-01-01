@@ -1,4 +1,5 @@
 #include "motor.h"
+#include "comuns.h"
 
 #define MAX_MSG_LEN 1024
 #define NLIN 16
@@ -280,7 +281,6 @@ void aguardarConexoes(int periodoInscricao, int nPlayersMinimo, int nPlayersMaxi
             if (contadorClientes >= nPlayersMinimo) {
                 printf("Número mínimo de jogadores atingido. Iniciando o jogo.\n");
                 break; 
-            }
 
             if (contadorClientes >= nPlayersMaximo) {
                 printf("Número máximo de jogadores atingido. Iniciando o jogo.\n");
