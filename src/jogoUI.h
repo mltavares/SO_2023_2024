@@ -12,7 +12,7 @@
 #include <errno.h>
 #include <sys/stat.h>
 #include <dirent.h>
-
+#include "comuns.h"
 
 #define MAX_NOME 50
 
@@ -23,5 +23,7 @@ typedef struct {
     int pontuacao;
     bool isPlaying;
 } Jogador;
+
+void comandoPlayers(KeyboardHandlerToken *token);
 
 #endif
