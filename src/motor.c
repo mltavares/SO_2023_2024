@@ -94,7 +94,6 @@ void adicionarJogador(Jogo *jogo, Player *novoJogador) {
     novoJogador->yCoordinate = y;
 }
 
-
 void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     FILE *mapFile = fopen(nomeArquivo, "r");
     if (mapFile == NULL) {
@@ -358,6 +357,7 @@ void lerComandosDosJogadores(PlayerArray *players, Jogo *jogo) {
 
 
 int main(int argc, char *argv[]) {
+    
     int lock_fd = open(LOCK_FILE, O_CREAT | O_EXCL, 0644);
     if (lock_fd == -1) {
         perror("Uma instância do motor já está em execução.");
