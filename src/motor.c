@@ -74,6 +74,27 @@ void lancarBot() {
     }
 }
 
+void encontrarPosicaoLivre(Jogo *jogo, int *x, int *y) {
+    srand(time(NULL)); 
+
+    do {
+        *x = rand() % NCOL;
+        *y = rand() % NLIN;
+    } while (jogo->maze[*y][*x] != ' '); 
+}
+
+void adicionarJogador(Jogo *jogo, Player *novoJogador) {
+    int x, y;
+    int maxLinhasVisiveis = LINHAS * 0.8;
+    int maxColunasVisiveis = COLUNAS * 0.8;
+
+    encontrarPosicaoLivre(jogo, &x, &y);
+
+    novoJogador->xCoordinate = x;
+    novoJogador->yCoordinate = y;
+}
+
+
 void carregarMapa(Jogo *jogo, const char *nomeArquivo) {
     FILE *mapFile = fopen(nomeArquivo, "r");
     if (mapFile == NULL) {
@@ -345,7 +366,7 @@ int main(int argc, char *argv[]) {
 
     Jogo jogo;
     PlayerArray players;
-    carregarMapa(&jogo, "mapa.txt");
+    carregarMapa(&jogo, "mapa1.txt");
 
     VariaveisAmbiente();
 
@@ -355,6 +376,11 @@ int main(int argc, char *argv[]) {
     aguardarConexoes(periodoInscricao, nPlayersMinimo, MAX_PLAYERS);
 
     if (contadorClientes >= nPlayersMinimo && contadorClientes <= MAX_PLAYERS) {
+        for (int i = 0; i < contadorClientes; i++) {
+            Player novoJogador;
+            adicionarJogador(&jogo, &novoJogador);
+            players.array[i] = novoJogador;
+        }
         enviarMapa(&jogo);
         comandosMotor(&jogo, &players);
 

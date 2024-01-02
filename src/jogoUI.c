@@ -4,6 +4,7 @@
 #define LINHAS 16
 #define COLUNAS 40
 #define PIPE_PATH "/tmp/client_fifo_"
+#define JOGADOR_CHAR '@'
 
 char mapa[LINHAS][COLUNAS];
 
@@ -20,7 +21,8 @@ void criarClienteFIFO() {
     }
 }
 
-void lerMapaDoPipe(char mapa[LINHAS][COLUNAS]) {
+
+void lerMapaDoPipe(char mapa[LINHAS][COLUNAS], int *posX, int *posY) {
     char fifoName[64];
     sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
     int fd = open(fifoName, O_RDONLY);
@@ -29,9 +31,17 @@ void lerMapaDoPipe(char mapa[LINHAS][COLUNAS]) {
         exit(1);
     }
 
+    // Ler o mapa
     for (int i = 0; i < LINHAS; i++) {
         read(fd, mapa[i], COLUNAS);
     }
+
+     // Ler posição inicial
+    char posBuffer[10];
+    read(fd, posBuffer, sizeof(posBuffer));  // Ler coordenada X
+    *posX = atoi(posBuffer);
+    read(fd, posBuffer, sizeof(posBuffer));  // Ler coordenada Y
+    *posY = atoi(posBuffer);
 
     close(fd);
 }
@@ -88,7 +98,7 @@ void utilizadorAutenticado(WINDOW *janela, const char *nomeJogador) {
     wrefresh(janela);
 }
 
-void desenhaMapa(WINDOW *janela, int tipo) {
+void desenhaMapa(WINDOW *janela, int tipo, int jogadorX, int jogadorY) {
     if (tipo == 1) {
         scrollok(janela, TRUE);
     } else {
@@ -99,45 +109,114 @@ void desenhaMapa(WINDOW *janela, int tipo) {
         box(janela, 0, 0);
 
         for (int i = 0; i < LINHAS && i < maxLinhas - 2; i++) {
-            mvwprintw(janela, i + 1, 1, "%.*s", maxColunas - 2, mapa[i]);
+            for (int j = 0; j < COLUNAS && j < maxColunas - 2; j++) {
+                if (i == jogadorY && j == jogadorX) {
+                    mvwaddch(janela, i + 1, j + 1, JOGADOR_CHAR);
+                } else {
+                    mvwaddch(janela, i + 1, j + 1, mapa[i][j]);
+                }
+            }
         }
     }
-    refresh();
     wrefresh(janela);
 }
 
-void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo) {
+void trataTeclado(WINDOW *janelaTopo, WINDOW *janelaBaixo, int *jogadorX, int *jogadorY) {
+    char fifoName[64];
+    sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
+    int fifo_fd = open(fifoName, O_WRONLY);
+
+    if (fifo_fd == -1) {
+        perror("Erro ao abrir o FIFO do cliente para escrita");
+        return;
+    }
+
     keypad(janelaTopo, TRUE);
-    wmove(janelaTopo, 1, 1);
+    int tecla;
+    char comando;
 
-    int tecla = wgetch(janelaTopo);
-    char comando[100];
-
-    while (tecla != 113) {
-        if (tecla == KEY_UP) {
-            desenhaMapa(janelaTopo, 2);
-            wrefresh(janelaTopo);
-        } else if (tecla == KEY_RIGHT) {
-            desenhaMapa(janelaTopo, 2);
-            wrefresh(janelaTopo);
-        } else if (tecla == KEY_LEFT) {
-            desenhaMapa(janelaTopo, 2);
-            wrefresh(janelaTopo);
-        } else if (tecla == KEY_DOWN) {
-            desenhaMapa(janelaTopo, 2);
-            wrefresh(janelaTopo);
-        } else if (tecla == ' ') {
-            desenhaMapa(janelaTopo, 2);
+    while ((tecla = wgetch(janelaTopo)) != 'q') { 
+        if (tecla == ' ') {
+            desenhaMapa(janelaTopo, 2, *jogadorX, *jogadorY);
             wrefresh(janelaTopo);
             echo();
-            comandosJogador(janelaBaixo);
+            comandosJogador(janelaBaixo); 
             noecho();
             wrefresh(janelaBaixo);
+        } else {
+            switch (tecla) {
+                case KEY_UP:
+                    comando = 'w';
+                    break;
+                case KEY_DOWN:
+                    comando = 's';
+                    break;
+                case KEY_LEFT:
+                    comando = 'a';
+                    break;
+                case KEY_RIGHT:
+                    comando = 'd';
+                    break;
+                default:
+                    comando = '\0';
+                    break;
+            }
         }
-        wmove(janelaTopo, 1, 1);
-        tecla = wgetch(janelaTopo);
+
+        if (comando != '\0') {
+            write(fifo_fd, &comando, sizeof(comando));
+
+            desenhaMapa(janelaTopo, 2, *jogadorX, *jogadorY);
+            wrefresh(janelaTopo);
+        }
     }
+
+    close(fifo_fd);
 }
+
+
+void *escutaAtualizacoes(void *arg) {
+    char fifoName[64];
+    sprintf(fifoName, "%s%d", PIPE_PATH, getpid());
+    int fd = open(fifoName, O_RDONLY);
+    if (fd == -1) {
+        perror("Erro ao abrir FIFO para leitura");
+        exit(1);
+    }
+
+    char buffer[COLUNAS + 1];  // +1 para o caractere nulo
+    int jogadorX = -1;  // Inicialmente, posição do jogador desconhecida
+    int jogadorY = -1;
+
+    while (1) {
+        for (int i = 0; i < LINHAS; i++) {
+            ssize_t bytes = read(fd, buffer, COLUNAS);
+            if (bytes > 0) {
+                buffer[bytes] = '\0';
+
+                // Verificar se a linha contém a representação do jogador
+                char *pos = strchr(buffer, JOGADOR_CHAR);
+                if (pos != NULL) {
+                    // Calcular as coordenadas do jogador
+                    jogadorX = pos - buffer;
+                    jogadorY = i;
+
+                    // Atualizar a posição do jogador na UI
+                    mvwaddch(janelaTopo, jogadorY + 1, jogadorX + 1, JOGADOR_CHAR);
+                }
+
+                // Atualizar a linha do mapa na UI
+                mvwprintw(janelaTopo, i + 1, 1, "%s", buffer);
+            }
+        }
+
+        // Atualizar a janela após processar todas as linhas
+        wrefresh(janelaTopo);
+    }
+    close(fd);
+    return NULL;
+}
+
 
 
 int main(int argc, char *argv[]) {
@@ -156,15 +235,24 @@ int main(int argc, char *argv[]) {
     WINDOW *janelaMensagens = newwin(22, 30, 3, 84);
 
     criarClienteFIFO();
-    lerMapaDoPipe(mapa);
-    desenhaMapa(janelaTopo, 2);
+    int posX, posY;
+    lerMapaDoPipe(mapa, &posX, &posY);
+
+    desenhaMapa(janelaTopo, 2, posX, posY);
+    wmove(janelaTopo, posY + 1, posX + 1);
+
+    pthread_t thread_id;
+    if (pthread_create(&thread_id, NULL, escutaAtualizacoes, NULL) != 0) {
+        perror("Falha ao criar thread de escuta");
+        return 1;
+    }
 
     scrollok(janelaMensagens, TRUE);
     box(janelaMensagens, 0, 0);
-    desenhaMapa(janelaBaixo, 1);
-    desenhaMapa(janelaMensagens, 1);
+    desenhaMapa(janelaBaixo, 1, 0, 0);
+    desenhaMapa(janelaMensagens, 1, 0, 0);
     utilizadorAutenticado(janelaBaixo, argv[1]);
-    trataTeclado(janelaTopo, janelaBaixo);
+    trataTeclado(janelaTopo, janelaBaixo, &posX, &posY);
     wclear(janelaTopo);
     wrefresh(janelaTopo);
     delwin(janelaTopo);
@@ -180,3 +268,5 @@ int main(int argc, char *argv[]) {
     unlink(fifoName);
     return 0;
 }
+
+
